@@ -4,6 +4,10 @@ public class AVLNode {
     int height;
     int weight;
     long sum;
+    // augmented with max for queries : for all keys <= k, find the max value of the paired
+    // limitation :L max cannot be <= 0, as getMax returns 0 for null node
+    long max;
+    long paired;
     AVLNode left;
     AVLNode right;
 
@@ -13,6 +17,17 @@ public class AVLNode {
         weight = 1;
         sum = val;
         height = 0;
+
+    }
+
+    public AVLNode(int val, long paired) {
+        this.val = val;
+        count = 1;
+        weight = 1;
+        sum = val;
+        height = 0;
+        max = paired;
+        this.paired = paired;
     }
 
     public int getHeight(AVLNode node) {
@@ -38,6 +53,14 @@ public class AVLNode {
             return node.sum;
         }
     }
+
+    public long getMax(AVLNode node) {
+        if (node == null) {
+            return 0;
+        } else {
+            return node.max;
+        }
+    }
     // right heavy trees
     public AVLNode leftRotate(AVLNode node, boolean forced) {
         if (forced) {
@@ -46,9 +69,12 @@ public class AVLNode {
             node.weight = node.count + getWeight(node.left) + getWeight(node.right);
             node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
             node.sum = node.val * node.count + getSum(node.left) + getSum(node.right);
+            node.max = Math.max(node.paired, Math.max(getMax(node.left), getMax(node.right)));
             newRoot.left = node;
             newRoot.weight = newRoot.count + getWeight(newRoot.left) + getWeight(newRoot.right);
+            newRoot.height = 1 + Math.max(getHeight(newRoot.left), getHeight(newRoot.right));
             newRoot.sum = newRoot.val * newRoot.count + getSum(newRoot.left) + getSum(newRoot.right);
+            newRoot.max = Math.max(newRoot.paired, Math.max(getMax(newRoot.left), getMax(newRoot.right)));
             //System.out.println(newRoot);
             return newRoot;
         } else if (getHeight(node.right.left) > Math.max(getHeight(node.right.right), getHeight(node.left))) {
@@ -66,10 +92,12 @@ public class AVLNode {
             node.weight = node.count + getWeight(node.left) + getWeight(node.right);
             node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
             node.sum = node.val * node.count + getSum(node.right) + getSum(node.left);
+            node.max = Math.max(node.paired, Math.max(getMax(node.left), getMax(node.right)));
             newRoot.right = node;
             newRoot.weight = newRoot.count + getWeight(newRoot.left) + getWeight(newRoot.right);
             newRoot.height = 1 + Math.max(getHeight(newRoot.left), getHeight(newRoot.right));
             newRoot.sum = newRoot.val * newRoot.count + getSum(newRoot.left) + getSum(newRoot.right);
+            newRoot.max = Math.max(newRoot.paired, Math.max(getMax(newRoot.left), getMax(newRoot.right)));
             //System.out.println(newRoot);
             return newRoot;
         } else if (getHeight(node.left.right) > Math.max(getHeight(node.left.left), getHeight(node.right))) {
@@ -97,6 +125,7 @@ public class AVLNode {
                 node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
                 node.weight = node.count + getWeight(node.left) + getWeight(node.right);
                 node.sum = node.val * node.count + getSum(node.left) + getSum(node.right);
+                //node.max = Math.max(node.paired, Math.max(getMax(node.left), getMax(node.right)));
                 return node;
             }
         } else {
@@ -107,6 +136,46 @@ public class AVLNode {
                 node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
                 node.weight = node.count + getWeight(node.left) + getWeight(node.right);
                 node.sum = node.val * node.count + getSum(node.left) + getSum(node.right);
+                //node.max = Math.max(node.paired, Math.max(getMax(node.left), getMax(node.right)));
+                return node;
+            }
+        }
+    }
+
+    public AVLNode insert(AVLNode node, int val, int paired) {
+        //System.out.println("hello");
+        if (node == null) {
+            return new AVLNode(val, paired);
+        } else if (node.val == val) {
+            node.count += 1;
+            node.weight += 1;
+            node.sum += val;
+            node.paired = Math.max(node.paired, paired);
+            node.max = Math.max(node.paired, node.max);
+            return node;
+        } else if (node.val > val) {
+            node.left = insert(node.left, val, paired);
+            if (getHeight(node.left) > 1 + getHeight(node.right)) {
+                return rightRotate(node, false);
+            } else {
+                node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
+                node.weight = node.count + getWeight(node.left) + getWeight(node.right);
+                node.sum = node.val * node.count + getSum(node.left) + getSum(node.right);
+                node.max = Math.max(node.paired, Math.max(getMax(node.left), getMax(node.right)));
+                return node;
+            }
+        } else {
+            node.right = insert(node.right, val, paired);
+            if (getHeight(node.right) > getHeight(node.left) + 1) {
+                return leftRotate(node, false);
+            } else {
+                //System.out.println("hello");
+                node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
+                node.weight = node.count + getWeight(node.left) + getWeight(node.right);
+                node.sum = node.val * node.count + getSum(node.left) + getSum(node.right);
+                node.max = Math.max(node.paired, Math.max(getMax(node.left), getMax(node.right)));
+                //System.out.println(node.right.max);
+                //System.out.println(node.max);
                 return node;
             }
         }
@@ -204,6 +273,7 @@ public class AVLNode {
     // Invariant: always recurse on valid node, no null node
     public long getPosition(AVLNode node, int index) {
         int leftCount = getWeight(node.left);
+        // if left is null leftCount return 0
         if (index <= leftCount) {
             return getPosition(node.left, index);
         } else if (leftCount < index && index <= leftCount + node.count) {
@@ -228,6 +298,10 @@ public class AVLNode {
         } else if (leftCount < index && index <= leftCount + node.count) {
             return node.val * (leftCount + node.count - index + 1) + getSum(node.right);
         } else {
+            // we must - (leftCount + node.count)
+            // because after the removal of the left subtree and the root,
+            // the right subtree's smallest element index starts from 1, not leftCount + node.count + 1
+            // so we must subtract the index accordingly
             return leftTraversal(node.right, index - leftCount - node.count);
         }
     }
@@ -263,6 +337,43 @@ public class AVLNode {
         }
     }
 
+    public long countGreaterAndEqual(AVLNode node, int val) {
+        if (node == null) {
+            return Long.MAX_VALUE;
+        } else if (node.val == val) {
+            return node.count + countGreaterAndEqual(node.right, val);
+        } else if (node.val < val){
+            return countGreaterAndEqual(node.right, val);
+        } else {
+            return node.count + getWeight(node.right) + countGreaterAndEqual(node.left, val);
+        }
+    }
+
+    public long getMaxForAllKeysLess(AVLNode node, int key) {
+        if (node == null) {
+            return 0;
+        } else if (node.val < key) {
+            long maxLeft = Math.max(node.paired, getMax(node.left));
+            return Math.max(maxLeft, getMaxForAllKeysLess(node.right, key));
+        } else if (node.val == key) {
+            return Math.max(node.paired, getMax(node.left));
+        } else {
+            return getMaxForAllKeysLess(node.left, key);
+        }
+    }
+
+    public long getMaxForAllKeysMore(AVLNode node, int key) {
+        if (node == null) {
+            return 0;
+        } else if (node.val < key) {
+            return getMaxForAllKeysMore(node.right, key);
+        } else if (node.val == key) {
+            return Math.max(node.paired, getMax(node.right));
+        } else {
+            long maxRight = Math.max(node.paired, getMax(node.right));
+            return Math.max(maxRight, getMaxForAllKeysMore(node.left, key));
+        }
+    }
 
 
 
