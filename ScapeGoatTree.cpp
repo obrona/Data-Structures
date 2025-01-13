@@ -170,11 +170,11 @@ public:
 
 int main() {
     Node *root = nullptr;
-    for (int i = 1; i <= 100000; i ++) {
+    for (int i = 1; i <= 1000000; i ++) {
         root = Node::insert(root, i, false);
     }
 
-    for (int i = 1; i <= 100000; i += 2) {
+    for (int i = 1; i <= 1000000; i += 2) {
         root = Node::remove(root, i, false);
     }
 
@@ -182,7 +182,7 @@ int main() {
     vector<Node*> store;
     
     Node::inorder(root, store);
-    for (Node *n : store) {
-        cout << n->v << endl;
-    }
+    //for (Node *n : store) {
+    //    cout << n->v << endl;
+    //}
 }
